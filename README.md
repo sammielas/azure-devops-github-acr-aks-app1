@@ -1,196 +1,135 @@
-# Azure DevOps App with AKS, Github and ACR
 ---
-title: Azure DevOps Build, Push Docker Image to ACR
-description: Create Azure Pipeline to Build and Push Docker Image to Azure Container Registry  
+title: Azure DevOps Build, Push to ACR and Deploy to AKS
+description: Create Azure Pipeline to Build and Push Docker Image to Azure Container Registry and Deploy to AKS Kubernetes Cluster  
 ---
+# Azure DevOps - Build, Push to ACR and Deploy to AKS
 
-# Azure DevOps - Build and Push Docker Image to Azure Container Registry
+## Step-00: Pre-requisites
+- We should have Azure AKS Cluster Up and Running.
+```
+# Configure Command Line Credentials
+az aks get-credentials --name aksdemo2 --resource-group aks-rg2
+
+# Verify Nodes
+kubectl get nodes 
+kubectl get nodes -o wide
+```
 
 ## Step-01: Introduction
-- Understand Azure DevOps Basics
-- Understand Azure Pipelines
-- Implement a pipeline to Build and Push Docker Image to Azure Container Registry
+- Add a Deployment Pipeline in Azure Pipelines to Deploy newly built docker image from ACR to Azure AKS
 
-[![Image](https://stacksimplify.com/course-images/azure-devops-pipelines-build-and-push-docker-image-to-acr.png "Azure AKS Kubernetes - Masterclass")](https://stacksimplify.com/course-images/azure-devops-pipelines-build-and-push-docker-image-to-acr.png)
+[![Image](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png "Azure AKS Kubernetes - Masterclass")](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png)
 
-## Step-02: Create Github Project and Check-In Code
-### Create Github Repo in Github
-- Name: azure-devops-github-acr-aks-app1
-- Description: Azure DevOps App with AKS, Github and Azure Containter Registry
-- Repo Type: Public / Private (Your choice)
-- Click on **Create Repository**
-
-### Create Local Git Repo and Check-In Code
-- Create Local folders
-```
-# Create a folder for all Repos we are going to create 
-mkdir azure-devops-aks-demo-repos
-cd azure-devops-aks-demo-repos
-
-# Create a Directory for Repo
-mkdir azure-devops-github-acr-aks-app
-cd azure-devops-github-acr-aks-app
-```
-- Copy all files from `Giti-Repository-files` folder to our new repo folder `azure-devops-github-acr-aks-app`
-```
-# Initialize Git Repo
-cd azure-devops-github-acr-aks-app
-git init
-
-# Do local Commit
-echo "# Azure DevOps App1 Demo with AKS, Github and ACR" >> README.md
-git add .
-git commit -am "V1 Base Commit"
-
-# Link Github Remote Repository
-git remote add origin https://github.com/your-username/azure-devops-github-acr-aks-app.git
-
-# Push to Remote Repository
-git push --set-upstream origin master
-
-# Go to Github Repo - Refresh and check files appeared in github repo
-https://github.com/your-username/azure-devops-github-acr-aks-app
-```
-
-## Step-03: Review github checked-in files
-- kube-manifests
-- Dockerfile
-- index.html
-
-## Step-04: Create Azure Container Registry ACR
-- Go to Services -> Container Registries
-- Click on **Add**
-- Subscription: Your-Paid-Subsciption
-- Resource Group: acr-rg1
-- Registry Name: aksdevopsacr   (NAME should be unique across Azure Cloud)
-- Location: Central US
-- SKU: Basic  (Pricing Note: $0.167 per day)
-- Click on **Review + Create**
-- Click on **Create**
-
-## Step-05: Creat DevOps Organization
-- Go to
-  - https://dev.azure.com/
-  - Sign in to Azure DevOps
-- Our Organization will be automatically created and if you want to manually create organization you can create one. 
-- Organization Name: aksdemo1
-
-
-## Step-06 : Create DevOps Project
-- Project Name: azure-devops-github-acr-aks-app1
-- Project Description: AKS CICD Pipelines with Github and Azure Container Registry ACR
-- Visibility: Private
-- Advanced: Leave to defaults
-  - Version Control: Git
-  - Work Item Process: Basic
-
-## Step-07: Create Basic Build Pipeline
-- Create Folder -> App1-Pipelines
-- Go to Pipelines -> Create New Pipeline
-- Where is your Code?: Github  
-- Select Repository: azure-devops-github-acr-aks-app1
-  - Provide Github Password
-  - Click on **Approve and Install** for Repositories selected
-- Configure Your Pipeline: Docker (Build and Push Image to Azure Container Registry )
-- Select an Azure Subscription: stacksimplify-paid-subscription
-- Continue (Login as admin user)
-- Container Registry: aksdevopsacr
-- Image Name: app1-nginx
-- Dockerfile: $(Build.SourcesDirectory)/Dockerfile
+## Step-02: Create Pipeline for Deploy to AKS
+- Go to Pipleines -> Create new Pipleine
+- Where is your code?: Github
+- Select a Repository: "select your repo" (app1/app1nginx)
+- Configure your pipeline: Deploy to Azure Kubernetes Service
+- Select Subscription: your-subscription (select your subscription)
+- Provide username and password (Azure cloud admin user)
+- Deploy to Azure Kubernetes Service
+  - Cluster: cluster-name
+  - Namespace: existing (default)
+  - Container Registry: registry-name
+  - Image Name: app1nginxaks
+  - Service Port: 80
 - Click on **Validate and Configure**
-- Change Pipeline Name: 01-docker-build-and-push-to-acr-pipeline.yml
+- Review your pipeline YAML
+  -  Change Pipeline Name: 02-docker-build-push-to-acs-deploy-to-aks-pipeline.yml
 - Click on **Save and Run**
-- Commit Message: Pipeline-1: Docker Build and Push to ACR
+- Commit Message: Docker, Build, Push and Deploy to AKS
 - Commit directly to master branch: check
-- Click on **Save and Run**
+- Click on  **Save and Run**
 
-## Step-08: Review Build Logs & Docker Image in ACR
-- Review Build logs
-- Review Image in ACR
+ ## Step-03: Verify Build and Deploy logs
+ - Build stage should pass. Verify logs
+ - Deploy stage should pass. Verify logs
 
-## Step-09: Rename Pipeline Name
-- Click on Pipeline -> Rename/Move
-- Name: 01-Docker-Build-and-Push-to-ACR
 
-## Step-10: Make changes to index.html and push changes to git repo - V2 Commit
+## Step-04: Verify Build and Deploy pipeline logs
+- Go to Pipeline -> Verify logs
 ```
-# Pull changes related to pipeline to local repo
-git pull
-ls -lrt
+# Verify Pods
+kubectl get pods
+
+# Get Public IP
+kubectl get svc
+
+# Access Application
+http://<Public-IP-from-Get-Service-Output>
+```
+
+ ## Step-05: Rename Pipeline Name
+- Go to pipeline -> Rename / Move
+- Name: 02-Docker-BuildPushToACR-DeployToAKSCluster
+- Folder: App1-Pipelines
+- Refresh till changes reflect
+- Verify -> Pipelines -> Click on **All** tab
+
+## Step-06: Make Changes to index.html and Verify
+```
+ # Pull
+ git pull
 
 # Make changes to index.html
-index.html file - change version v2
+Change version to V3
 
-# Push changes
-git add .
-git commit -am "V2 Commit for index.html"
+# Commit and Push
+git commit -am "V3 commit index.html"
 git push
-```
-- Verify Build logs 
-- Verify ACR Image
 
-## Step-12: Add Namespace for Docker Images stored in ACR
-- Go to Pipeline -> 01-Docker-Build-and-Push-to-ACR -> Edit
-- Update the below and Save
-```yaml
-# Before
-  imageRepository: 'app1nginx'
+# Verify Build and Deploy logs
+- Build stage logs
+- Deploy stage logs
+- Verify ACR Repository
 
-# After
-  imageRepository: 'app1/app1nginx'  
-```
-- Verify Build logs 
-- Verify ACR Image
+# List Pods (Verify Age of Pod)
+kubectl get pods 
 
-## Step-13: Make changes to index.html and push changes to git repo - V3 Commit
-```
-# Pull changes related to pipeline to local repo
-git pull
-ls -lrt
+# Get Public IP
+kubectl get svc
 
-# Make changes to index.html
-index.html file - change version v3
+# Access Application
+http://<Public-IP-from-Get-Service-Output>
 
-# Push changes
-git add .
-git commit -am "V3 Commit for index.html"
-git push
-```
-- Verify Build logs 
-- Verify ACR Image
+``` 
 
-## Step-14: Disable Pipeline
-- Go to Pipeline -> 01-Docker-Build-and-Push-to-ACR -> Settings -> Disable
+## Step-07: Disable Pipeline
+- Go to Pipeline -> 02-Docker-BuildPushToACR-DeployToAKSCluster -> Settings -> Disable
 
-## Step-15: Review Pipeline code
+
+## Step-08: Review Pipeline code
 - Click on Pipeline -> Edit Pipeline
 - Review pipeline code
 - Review Service Connections
-```yaml
-# Docker
-# Build and push an image to Azure Container Registry
+ ```yaml
+ # Deploy to Azure Kubernetes Service
+# Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- main
+- master
 
 resources:
 - repo: self
 
 variables:
+
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '6a8843fd-7313-48e2-9381-3f9ef59ce82d' ## Review Service Connections
-  imageRepository: 'app1/app1nginx'
+  dockerRegistryServiceConnection: '8e06f498-fd9e-481c-8453-12d8c2da0245'
+  imageRepository: 'app1nginxaks'
   containerRegistry: 'aksdevopsacr.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-  
+  imagePullSecret: 'aksdevopsacr1755e8d5-auth'
+
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
+  
 
 stages:
 - stage: Build
-  displayName: Build and push stage
+  displayName: Build stage
   jobs:  
   - job: Build
     displayName: Build
@@ -206,8 +145,51 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
-```
+          
+    - upload: manifests
+      artifact: manifests
 
-## References
-- [Azure DevOps](https://docs.microsoft.com/en-us/azure/devops/pipelines/?view=azure-devops)
- 
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'stacksimplifyazuredevopsgithubacraksapp1internal-1561.default'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Create imagePullSecret
+            inputs:
+              action: createSecret
+              secretName: $(imagePullSecret)
+              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+              
+          - task: KubernetesManifest@0
+            displayName: Deploy to Kubernetes cluster
+            inputs:
+              action: deploy
+              manifests: |
+                $(Pipeline.Workspace)/manifests/deployment.yml
+                $(Pipeline.Workspace)/manifests/service.yml
+              imagePullSecrets: |
+                $(imagePullSecret)
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(tag)
+ ``` 
+
+ ## Step-09: Clean-Up Apps in AKS Cluster
+ ```
+ # Delete Deployment
+ kubectl get deploy
+ kubectl delete deploy app1nginxaks
+
+ # Delete Service
+ kubectl get svc
+ kubectl delete svc app1nginxaks
+ ```
