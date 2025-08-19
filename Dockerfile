@@ -36,7 +36,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Create custom nginx config that works with non-root user
 RUN echo 'server { \
-    listen 80; \
+    listen 8080; \
     server_name localhost; \
     root /usr/share/nginx/html; \
     index index.html; \
@@ -48,8 +48,8 @@ RUN echo 'server { \
 # Switch to nginx user for security
 USER nginx
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8080
+EXPOSE 8080
 
 # Start nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]
