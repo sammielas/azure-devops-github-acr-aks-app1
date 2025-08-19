@@ -34,16 +34,33 @@ RUN mkdir -p /var/cache/nginx/client_temp \
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create custom nginx config that works with non-root user
-RUN echo 'server { \
-    listen 8080; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
+# Create a complete nginx.conf that works with non-root user
+RUN echo 'events { \
+    worker_connections 1024; \
+} \
+http { \
+    include /etc/nginx/mime.types; \
+    default_type application/octet-stream; \
+    sendfile on; \
+    keepalive_timeout 65; \
+    gzip on; \
+    server { \
+        listen 8080; \
+        server_name localhost; \
+        root /usr/share/nginx/html; \
+        index index.html; \
+        location / { \
+            try_files $uri $uri/ /index.html; \
+        } \
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { \
+            expires 1y; \
+            add_header Cache-Control "public, immutable"; \
+        } \
     } \
-}' > /etc/nginx/conf.d/default.conf
+}' > /etc/nginx/nginx.conf
+
+# Make sure nginx user can read the config
+RUN chown nginx:nginx /etc/nginx/nginx.conf
 
 # Switch to nginx user for security
 USER nginx
@@ -51,5 +68,5 @@ USER nginx
 # Expose port 8080
 EXPOSE 8080
 
-# Start nginx in foreground
+# Start nginx in foreground with custom config
 CMD ["nginx", "-g", "daemon off;"]
