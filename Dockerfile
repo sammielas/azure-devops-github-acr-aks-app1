@@ -35,10 +35,16 @@ RUN mkdir -p /var/cache/nginx/client_temp \
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Create a complete nginx.conf that works with non-root user
-RUN echo 'events { \
+RUN echo 'pid /tmp/nginx.pid; \
+events { \
     worker_connections 1024; \
 } \
 http { \
+    client_body_temp_path /tmp/client_temp; \
+    proxy_temp_path /tmp/proxy_temp_path; \
+    fastcgi_temp_path /tmp/fastcgi_temp; \
+    uwsgi_temp_path /tmp/uwsgi_temp; \
+    scgi_temp_path /tmp/scgi_temp; \
     include /etc/nginx/mime.types; \
     default_type application/octet-stream; \
     sendfile on; \
@@ -59,8 +65,10 @@ http { \
     } \
 }' > /etc/nginx/nginx.conf
 
-# Make sure nginx user can read the config
-RUN chown nginx:nginx /etc/nginx/nginx.conf
+# Make sure nginx user can read the config and create temp directories
+RUN chown nginx:nginx /etc/nginx/nginx.conf \
+    && mkdir -p /tmp/client_temp /tmp/proxy_temp_path /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \
+    && chown -R nginx:nginx /tmp
 
 # Switch to nginx user for security
 USER nginx
