@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: app1-nginx
-          image: samfl/azure-devops-github-acr-aks-app1:v1
+          image: rccgreg.azurecr.io/custom2aksnginxapp1:$(Build.BuildId)
           ports:
             - containerPort: 80
 ---

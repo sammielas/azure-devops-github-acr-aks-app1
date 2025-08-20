@@ -228,7 +228,18 @@ Create service connections for each namespace:
 - Default Version: Latest
 - Enable Continuous Deployment Trigger
 
-### Step-05: Configure Dev Stage
+### Step-05: Verify Deployment Manifest
+Ensure the image reference in `kube-manifests/01-Deployment-and-LoadBalancer-Service.yml`:
+```yaml
+spec:
+  containers:
+    - name: app1-nginx
+      image: aksdevopsacr.azurecr.io/custom2aksnginxapp1
+      ports:
+        - containerPort: 80
+```
+
+### Step-06: Configure Dev Stage
 **Stage Name**: Dev
 
 #### Task 1: Create Secret
@@ -249,17 +260,6 @@ Create service connections for each namespace:
 - Container: `aksdevopsacr.azurecr.io/custom2aksnginxapp1:$(Build.SourceVersion)`
 - ImagePullSecrets: `dev-aksdevopsacr-secret`
 
-### Step-06: Verify Deployment Manifest
-Ensure the image reference in `kube-manifests/01-Deployment-and-LoadBalancer-Service.yml`:
-```yaml
-spec:
-  containers:
-    - name: app1-nginx
-      image: aksdevopsacr.azurecr.io/custom2aksnginxapp1
-      ports:
-        - containerPort: 80
-```
-
 ### Step-07: Test Deployment
 ```bash
 # Make code changes
@@ -273,7 +273,40 @@ kubectl get svc -n dev
 http://<Public-IP-from-Get-Service-Output>
 ```
 
-### Step-08: Create QA, Staging and Prod Stages
+### Step-08: Update Deploy to AKS Task with Build.SourceVersion in Release Pipelines
+- Go to Release Pipelines → 01-app1-release-pipeline → Edit → Dev Tasks
+- Go to **Deploy to AKS** Task
+- Replace
+```bash
+#Before
+Containers: aksdevopsacr.azurecr.io/custom2aksnginxapp1:$(Build.BuildId)
+
+# After
+Containers: aksdevopsacr.azurecr.io/custom2aksnginxapp1:$(Build.SourceVersion)
+```
+- Click on **SAVE** to save release
+- Comment: Dev Container Tag changed from Build Id to Build Source Version
+
+### Step-09: Check-In Code and Test
+- Update index.html
+```bash
+# Commit and Push
+git commit -am "V12 Commit"
+git push
+```
+- View Build Logs
+- View Dev Release logs
+- Access App after successful deployment
+```bash
+# Get Public IP
+kubectl get svc -n dev
+
+# Access Application
+http://<Public-IP-from-Get-Service-Output>
+```
+- Verify Github Commit Id on Github Repository and Container Registry
+
+### Step-10: Create QA, Staging and Prod Stages
 Clone the Dev stage and update configurations:
 
 #### QA Stage Configuration
@@ -284,7 +317,7 @@ Clone the Dev stage and update configurations:
 
 Add pre-deployment approvals for QA, Staging, and Production environments.
 
-### Step-09: Multi-Environment Deployment Test
+### Step-11: Multi-Environment Deployment Test
 ```bash
 # Make code changes
 git commit -am "V13 Commit"
@@ -297,7 +330,7 @@ kubectl get svc --all-namespaces
 http://<Public-IP-from-each-environment>
 ```
 
-### Step-10: Clean-Up
+### Step-12: Clean-Up
 ```bash
 # Clean up all deployments
 kubectl delete ns dev
