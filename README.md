@@ -1,12 +1,17 @@
----
-title: Azure DevOps Build, Push to ACR and Deploy to AKS
-description: Create Azure Pipeline to Build and Push Docker Image to Azure Container Registry and Deploy to AKS Kubernetes Cluster  
----
-# Azure DevOps - Build, Push to ACR and Deploy to AKS
+# Azure DevOps Pipelines for AKS: Build, Push, and Multi-Stage Deployments
 
-## Step-00: Pre-requisites
-- We should have Azure AKS Cluster Up and Running.
-```
+## Overview
+This project covers two essential Azure DevOps workflows for Kubernetes:
+1. **Build Pipeline**: Building Docker images, pushing to Azure Container Registry (ACR), and deploying to AKS
+2. **Release Pipeline**: Multi-stage deployments across Dev, QA, Staging, and Production environments with approval gates
+
+---
+
+## Part 1: Build Pipeline - Build, Push to ACR and Deploy to AKS
+
+### Step-00: Pre-requisites
+- Azure AKS Cluster Up and Running
+```bash
 # Configure Command Line Credentials
 az aks get-credentials --name aksdemo2 --resource-group aks-rg2
 
@@ -15,40 +20,34 @@ kubectl get nodes
 kubectl get nodes -o wide
 ```
 
-## Step-01: Introduction
-- Add a Deployment Pipeline in Azure Pipelines to Deploy newly built docker image from ACR to Azure AKS
+### Step-01: Introduction
+Create a deployment pipeline to deploy newly built Docker images from ACR to Azure AKS
 
-[![Image](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png "Azure AKS Kubernetes - Masterclass")](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png)
+[![Azure DevOps AKS Deployment](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png)](https://www.stacksimplify.com/course-images/azure-devops-pipelines-deploy-to-aks.png)
 
-## Step-02: Create Pipeline for Deploy to AKS
-- Go to Pipleines -> Create new Pipleine
-- Where is your code?: Github
-- Select a Repository: "select your repo" (app1/app1nginx)
-- Configure your pipeline: Deploy to Azure Kubernetes Service
-- Select Subscription: your-subscription (select your subscription)
-- Provide username and password (Azure cloud admin user)
-- Deploy to Azure Kubernetes Service
-  - Cluster: cluster-name
-  - Namespace: existing (default)
-  - Container Registry: registry-name
-  - Image Name: app1nginxaks
-  - Service Port: 80
-- Click on **Validate and Configure**
-- Review your pipeline YAML
-  -  Change Pipeline Name: 02-docker-build-push-to-acs-deploy-to-aks-pipeline.yml
-- Click on **Save and Run**
-- Commit Message: Docker, Build, Push and Deploy to AKS
-- Commit directly to master branch: check
-- Click on  **Save and Run**
+### Step-02: Create Pipeline for Deploy to AKS
+1. Go to Pipelines → Create new Pipeline
+2. Where is your code?: Github
+3. Select a Repository: Choose your repository (app1/app1nginx)
+4. Configure your pipeline: Deploy to Azure Kubernetes Service
+5. Select Subscription: Your subscription
+6. Provide Azure cloud admin credentials
+7. Configure deployment settings:
+   - Cluster: Your cluster name
+   - Namespace: default (existing)
+   - Container Registry: Your registry name
+   - Image Name: app1nginxaks
+   - Service Port: 80
+8. Click **Validate and Configure**
+9. Change Pipeline Name: `02-docker-build-push-to-acs-deploy-to-aks-pipeline.yml`
+10. Click **Save and Run**
+11. Commit directly to master branch
+12. Click **Save and Run**
 
- ## Step-03: Verify Build and Deploy logs
- - Build stage should pass. Verify logs
- - Deploy stage should pass. Verify logs
-
-
-## Step-04: Verify Build and Deploy pipeline logs
-- Go to Pipeline -> Verify logs
-```
+### Step-03: Verify Build and Deploy logs
+- Verify both Build and Deploy stages pass successfully
+- Check application deployment:
+```bash
 # Verify Pods
 kubectl get pods
 
@@ -59,51 +58,33 @@ kubectl get svc
 http://<Public-IP-from-Get-Service-Output>
 ```
 
- ## Step-05: Rename Pipeline Name
-- Go to pipeline -> Rename / Move
-- Name: 02-Docker-BuildPushToACR-DeployToAKSCluster
-- Folder: App1-Pipelines
-- Refresh till changes reflect
-- Verify -> Pipelines -> Click on **All** tab
+### Step-04: Pipeline Renaming and Organization
+- Rename pipeline: `02-Docker-BuildPushToACR-DeployToAKSCluster`
+- Move to Folder: `App1-Pipelines`
 
-## Step-06: Make Changes to index.html and Verify
-```
- # Pull
- git pull
+### Step-05: Code Changes and Automated Deployment
+```bash
+# Pull latest
+git pull
 
 # Make changes to index.html
-Change version to V3
+# Change version to V3
 
 # Commit and Push
 git commit -am "V3 commit index.html"
 git push
 
-# Verify Build and Deploy logs
-- Build stage logs
-- Deploy stage logs
-- Verify ACR Repository
+# Verify automated build and deployment
+# Check new pod creation
+kubectl get pods
 
-# List Pods (Verify Age of Pod)
-kubectl get pods 
-
-# Get Public IP
-kubectl get svc
-
-# Access Application
+# Verify application update
 http://<Public-IP-from-Get-Service-Output>
+```
 
-``` 
-
-## Step-07: Disable Pipeline
-- Go to Pipeline -> 02-Docker-BuildPushToACR-DeployToAKSCluster -> Settings -> Disable
-
-
-## Step-08: Review Pipeline code
-- Click on Pipeline -> Edit Pipeline
-- Review pipeline code
-- Review Service Connections
- ```yaml
- # Deploy to Azure Kubernetes Service
+### Step-06: Pipeline Code Review
+```yaml
+# Deploy to Azure Kubernetes Service
 # Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
@@ -114,18 +95,13 @@ resources:
 - repo: self
 
 variables:
-
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '8e06f498-fd9e-481c-8453-12d8c2da0245'
+  dockerRegistryServiceConnection: 'your-service-connection-id'
   imageRepository: 'app1nginxaks'
-  containerRegistry: 'aksdevopsacr.azurecr.io'
+  containerRegistry: 'your-acr.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-  imagePullSecret: 'aksdevopsacr1755e8d5-auth'
-
-  # Agent VM image name
+  imagePullSecret: 'your-acr-auth-secret'
   vmImageName: 'ubuntu-latest'
-  
 
 stages:
 - stage: Build
@@ -152,13 +128,12 @@ stages:
 - stage: Deploy
   displayName: Deploy stage
   dependsOn: Build
-
   jobs:
   - deployment: Deploy
     displayName: Deploy
     pool:
       vmImage: $(vmImageName)
-    environment: 'stacksimplifyazuredevopsgithubacraksapp1internal-1561.default'
+    environment: 'your-environment-name'
     strategy:
       runOnce:
         deploy:
@@ -181,15 +156,160 @@ stages:
                 $(imagePullSecret)
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
- ``` 
+```
 
- ## Step-09: Clean-Up Apps in AKS Cluster
- ```
- # Delete Deployment
- kubectl get deploy
- kubectl delete deploy app1nginxaks
+### Step-07: Clean-Up
+```bash
+# Delete Deployment
+kubectl delete deploy app1nginxaks
 
- # Delete Service
- kubectl get svc
- kubectl delete svc app1nginxaks
- ```
+# Delete Service
+kubectl delete svc app1nginxaks
+```
+
+---
+
+## Part 2: Release Pipelines for Multi-Environment AKS Deployments
+
+### Step-01: Introduction
+Create release pipelines for deploying Kubernetes workloads across multiple environments with approval gates
+
+[![Release Pipelines Overview](https://stacksimplify.com/course-images/azure-devops-release-pipelines-for-azure-aks.png)](https://stacksimplify.com/course-images/azure-devops-release-pipelines-for-azure-aks.png)
+
+### Step-02: Create Namespaces
+```bash
+# Create Namespaces
+kubectl create ns dev
+kubectl create ns qa
+kubectl create ns staging
+kubectl create ns prod
+
+# Verify Namespaces
+kubectl get ns
+```
+
+### Step-03: Create Kubernetes Service Connections
+Create service connections for each namespace:
+
+#### Dev Service Connection
+- Type: Kubernetes
+- Authentication: Azure Subscription
+- Cluster: aksdemo2
+- Namespace: dev
+- Name: `dev-ns-k8s-aks-svc-conn`
+
+#### QA Service Connection
+- Type: Kubernetes
+- Authentication: Azure Subscription
+- Cluster: aksdemo2
+- Namespace: qa
+- Name: `qa-ns-k8s-aks-svc-conn`
+
+#### Staging Service Connection
+- Type: Kubernetes
+- Authentication: Azure Subscription
+- Cluster: aksdemo2
+- Namespace: staging
+- Name: `staging-ns-k8s-aks-svc-conn`
+
+#### Production Service Connection
+- Type: Kubernetes
+- Authentication: Azure Subscription
+- Cluster: aksdemo2
+- Namespace: prod
+- Name: `prod-ns-k8s-aks-svc-conn`
+
+### Step-04: Create Release Pipeline
+**Pipeline Name**: `01-app1-release-pipeline`
+
+#### Add Artifact
+- Source Type: Build
+- Build Pipeline: `App1-Pipelines\04-custom2-BuildPushToACR-Publish-k8s-manifests-to-AzurePipelines`
+- Default Version: Latest
+- Enable Continuous Deployment Trigger
+
+### Step-05: Configure Dev Stage
+**Stage Name**: Dev
+
+#### Task 1: Create Secret
+- Display Name: Create Secret to allow image pull from ACR
+- Action: create secret
+- Kubernetes service connection: `dev-ns-k8s-aks-svc-conn`
+- Namespace: dev
+- Secret type: dockerRegistry
+- Secret name: `dev-aksdevopsacr-secret`
+- Docker registry service connection: Your ACR service connection
+
+#### Task 2: Deploy to Kubernetes
+- Display Name: Deploy to AKS
+- Action: deploy
+- Kubernetes Service Connection: `dev-ns-k8s-aks-svc-conn`
+- Namespace: dev
+- Manifest: `$(System.DefaultWorkingDirectory)/_04-custom2-BuildPushToACR-Publish-k8s-manifests-to-AzurePipelines/kube-manifests/01-Deployment-and-LoadBalancer-Service.yml`
+- Container: `aksdevopsacr.azurecr.io/custom2aksnginxapp1:$(Build.SourceVersion)`
+- ImagePullSecrets: `dev-aksdevopsacr-secret`
+
+### Step-06: Verify Deployment Manifest
+Ensure the image reference in `kube-manifests/01-Deployment-and-LoadBalancer-Service.yml`:
+```yaml
+spec:
+  containers:
+    - name: app1-nginx
+      image: aksdevopsacr.azurecr.io/custom2aksnginxapp1
+      ports:
+        - containerPort: 80
+```
+
+### Step-07: Test Deployment
+```bash
+# Make code changes
+git commit -am "V11 Commit"
+git push
+
+# Verify deployment
+kubectl get svc -n dev
+
+# Access application
+http://<Public-IP-from-Get-Service-Output>
+```
+
+### Step-08: Create QA, Staging and Prod Stages
+Clone the Dev stage and update configurations:
+
+#### QA Stage Configuration
+- Kubernetes service connection: `qa-ns-k8s-aks-svc-conn`
+- Namespace: qa
+- Secret name: `qa-aksdevopsacr-secret`
+- ImagePullSecrets: `qa-aksdevopsacr-secret`
+
+Add pre-deployment approvals for QA, Staging, and Production environments.
+
+### Step-09: Multi-Environment Deployment Test
+```bash
+# Make code changes
+git commit -am "V13 Commit"
+git push
+
+# Monitor deployments through all environments
+kubectl get svc --all-namespaces
+
+# Access applications in each environment
+http://<Public-IP-from-each-environment>
+```
+
+### Step-10: Clean-Up
+```bash
+# Clean up all deployments
+kubectl delete ns dev
+kubectl delete ns qa
+kubectl delete ns staging
+kubectl delete ns prod
+
+# Verify cleanup
+kubectl get pod,svc --all-namespaces
+```
+
+## References
+- [Azure DevOps Kubernetes Deployment Task](https://docs.microsoft.com/en-us/azure/devops/pipelines/ecosystems/kubernetes/deploy?view=azure-devops)
+- [Azure Container Registry Documentation](https://docs.microsoft.com/en-us/azure/container-registry/)
+- [Azure Kubernetes Service Documentation](https://docs.microsoft.com/en-us/azure/aks/)
