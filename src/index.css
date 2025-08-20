@@ -9,7 +9,7 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* European Travel Theme - Sophisticated Blues & Warm Accents */
-    --background: 0 0% 100%;
+    --background: 0 0% 10%;
     --foreground: 210 15% 15%;
 
     --card: 0 0% 100%;
