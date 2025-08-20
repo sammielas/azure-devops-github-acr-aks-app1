@@ -18,7 +18,7 @@ spec:
         - name: app1-nginx
           image: rccgreg.azurecr.io/custom2aksnginxapp1:$(Build.BuildId)
           ports:
-            - containerPort: 80
+            - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
